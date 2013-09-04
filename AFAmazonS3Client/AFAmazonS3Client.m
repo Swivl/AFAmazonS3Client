@@ -461,9 +461,11 @@ NSString * AFBase64EncodedStringFromData(NSData *data) {
 {
     NSDictionary *parameters = @{@"uploadId" : uploadId};
     
+    NSData *dataBody = [@"<XML> </XML>" dataUsingEncoding:NSUnicodeStringEncoding];
+
+    
 	NSURLRequest *request = [self multipartFormRequestWithMethod:@"POST" path:destinationPath parameters:parameters constructingBodyWithBlock: ^(id <AFMultipartFormData> formData) {
-        
-        [formData appendPartWithFormData:(NSData *)data name:(NSString *)name];
+        [formData appendPartWithFormData:dataBody name:@"xml-body"];
     }];
     
 	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, id responseObject) {
