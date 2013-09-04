@@ -225,6 +225,30 @@
                      success:(void (^)(id responseObject))success
                      failure:(void (^)(NSError *error))failure;
 
+
+/** DRAFT Multipart uploads to S3 **/
+- (void)initiateMultipartToPath:(NSString *)destinationPath
+                     parameters:(NSDictionary *)parameters
+                        success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
+                        failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure;
+
+
+- (void)putMultipartObjectWithFile:(NSString *)path
+                   destinationPath:(NSString *)destinationPath
+                          uploadId:(NSString *)uploadId
+                        partNumber:(NSNumber *)partNumber
+                          progress:(void (^)(NSUInteger bytesWritten, long long totalBytesWritten, long long totalBytesExpectedToWrite))progress
+                           success:(void (^)(id responseObject))success
+                           failure:(void (^)(NSError *error))failure;
+
+- (void)finalizeMultipartToPath:(NSString *)destinationPath
+                       uploadId:(NSString *)uploadId
+                          eTags:(NSArray *)eTags
+                        success:(void (^)(id responseObject))success
+                        failure:(void (^)(NSError *error))failure;
+
+
+
 @end
 
 ///----------------

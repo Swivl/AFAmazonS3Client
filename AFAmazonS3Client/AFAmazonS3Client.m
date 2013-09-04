@@ -399,6 +399,88 @@ NSString * AFBase64EncodedStringFromData(NSData *data) {
     }
 }
 
+#pragma mark - Multipart upload
+- (void)initiateMultipartToPath:(NSString *)destinationPath
+                     parameters:(NSDictionary *)parameters
+                        success:(void (^)(AFHTTPRequestOperation *operation, id responseObject))success
+                        failure:(void (^)(AFHTTPRequestOperation *operation, NSError *error))failure
+{
+	NSURLRequest *request = [self requestWithMethod:@"POST"
+                                               path:[NSString stringWithFormat:@"%@?uploads" ,destinationPath]
+                                         parameters:parameters];
+    
+	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:success failure:failure];
+    [self enqueueHTTPRequestOperation:operation];
+}
+
+- (void)putMultipartObjectWithFile:(NSString *)path
+                   destinationPath:(NSString *)destinationPath
+                          uploadId:(NSString *)uploadId
+                        partNumber:(NSNumber *)partNumber
+                          progress:(void (^)(NSUInteger bytesWritten, long long totalBytesWritten, long long totalBytesExpectedToWrite))progress
+                           success:(void (^)(id responseObject))success
+                           failure:(void (^)(NSError *error))failure
+{
+    
+    // NSData *imageData = UIImagePNGRepresentation(image);
+    
+    
+    NSDictionary *parameters = @{@"partNumber" : partNumber,
+                                 @"uploadId" : uploadId };
+    
+    NSMutableURLRequest *request = [self multipartFormRequestWithMethod:@"PUT" path:destinationPath parameters:parameters constructingBodyWithBlock: ^(id <AFMultipartFormData> formData) {
+        __autoreleasing  NSError **error;
+        [formData appendPartWithFileURL:[NSURL fileURLWithPath:path] name:destinationPath error:error];
+    }];
+    
+    
+    [self authorizeRequest:request withPath:destinationPath];
+    
+	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSLog(@"===HEADER===\n%@", [[operation response] allHeaderFields]);
+        if (success) {
+            success([[operation response] allHeaderFields][@"Etag"]);
+        }
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        if (failure) {
+            failure(error);
+        }
+    }];
+    [operation setUploadProgressBlock:progress];
+    
+    [self enqueueHTTPRequestOperation:operation];
+    
+}
+
+
+- (void)finalizeMultipartToPath:(NSString *)destinationPath
+                       uploadId:(NSString *)uploadId
+                          eTags:(NSArray *)eTags
+                        success:(void (^)(id responseObject))success
+                        failure:(void (^)(NSError *error))failure
+{
+    NSDictionary *parameters = @{@"uploadId" : uploadId};
+    
+	NSURLRequest *request = [self multipartFormRequestWithMethod:@"POST" path:destinationPath parameters:parameters constructingBodyWithBlock: ^(id <AFMultipartFormData> formData) {
+        
+        [formData appendPartWithFormData:(NSData *)data name:(NSString *)name];
+    }];
+    
+	AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSLog(@"===HEADER===\n%@", [[operation response] allHeaderFields]);
+        if (success) {
+            success(responseObject);
+        }
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        if (failure) {
+            failure(error);
+        }
+    }];
+    
+    [self enqueueHTTPRequestOperation:operation];
+    
+}
+
 #pragma mark - AFHTTPClient
 
 - (NSMutableURLRequest *)requestWithMethod:(NSString *)method
